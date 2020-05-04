@@ -1,0 +1,6 @@
+git
+opencv-python==4.0.0.21
+telebot~=0.0.3
+aiohttp~=3.6.2
+numpy~=1.18.4
+tensorflow~=1.14.0
