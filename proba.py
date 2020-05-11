@@ -1,23 +1,22 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# This is a simple echo bot using decorators and webhook with aiohttp
+# It echoes any incoming text messages and does not use the polling method.
+
 import logging
 import ssl
-from aiohttp import web
-import telebot
-import os
-import cv2
-from predict import Predict_gar
-from tensorflow.keras.models import load_model
 
-base_dir = os.path.dirname(__file__)
-prototxt_path = os.path.join(base_dir + 'models/deploy.prototxt')
-caffemodel_path = os.path.join(base_dir + 'models/weights.caffemodel')
-dir_path = 'photo/'  # Путь до папки, куда будут заливаться фото
-dir_faces = 'faces/'  # Путь до папки, где будут хранить вырезанные лицы
-dir_faces_recognition = 'faces_recognition/'  # Путь до папки, где будет лежать фоточка с боксами
+from aiohttp import web
+
+import telebot
 
 API_TOKEN = '1205122381:AAHCV0Psz5TcNkOkwWTnyoIWabuDWda4izI'
+
 WEBHOOK_HOST = '34.72.228.149'
 WEBHOOK_PORT = 8443  # 443, 80, 88 or 8443 (port need to be 'open')
 WEBHOOK_LISTEN = '0.0.0.0'  # In some VPS you may need to put here the IP addr
+
 WEBHOOK_SSL_CERT = 'url_cert.pem'  # Path to the ssl certificate
 WEBHOOK_SSL_PRIV = 'url_private.key'  # Path to the ssl private key
 
@@ -31,13 +30,14 @@ WEBHOOK_SSL_PRIV = 'url_private.key'  # Path to the ssl private key
 
 WEBHOOK_URL_BASE = "https://{}:{}".format(WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/{}/".format(API_TOKEN)
+
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
+
 bot = telebot.TeleBot(API_TOKEN)
+
 app = web.Application()
 
-model_multitask = load_model("models/checkpoint_best.h5")
-NN_predictor = Predict_gar(model_multitask, base_dir, prototxt_path, caffemodel_path, dir_path, dir_faces, dir_faces_recognition)
 
 # Process webhook calls
 async def handle(request):
@@ -52,36 +52,13 @@ async def handle(request):
 
 app.router.add_post('/{token}/', handle)
 
+
 # Handle '/start' and '/help'
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
     bot.reply_to(message,
-                 ("Привет, я GAR-bot.\n"
-                  "Отправь мне в ответном сообщении фотографию с людьми"))
-
-@bot.message_handler(content_types=['photo'])
-def handle_docs_document(message):
-    file_info = bot.get_file(message.photo[len(message.photo) - 1].file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    src = 'photo/' + message.photo[1].file_id
-    with open(src, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    bot.reply_to(message, "Фото обрабатывается")
-    image = cv2.imread(src)
-    NN_predictor.predict_box_faces(image)
-    bot.reply_to(message, message.chat.id)
-    photo = open(base_dir + dir_faces + 'photo.jpg', 'rb')
-    bot.send_photo(message.chat.id, photo)
-    image = cv2.imread(src)
-
-    NN_predictor.save_faces(image)
-
-    bot.reply_to(message,
-                 os.listdir(path=base_dir + dir_faces_recognition))
-
-    text = NN_predictor.return_text_predict()
-    bot.reply_to(message, text)
-
+                 ("Hi there, I am EchoBot.\n"
+                  "I am here to echo your kind words back to you."))
 
 
 # Handle all other messages
